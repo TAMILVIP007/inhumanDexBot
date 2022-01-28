@@ -63,9 +63,7 @@ def get_bot_data(app, message):
 @app.on_message(Filters.command(['stats', 'stats@inhumanDexBot']))
 def get_stats(app, message):
     if message.from_user.id in Config.sudo:
-        members = 0
-        for group in stats['groups']:
-            members += stats['groups'][group]['members']
+        members = sum(stats['groups'][group]['members'] for group in stats['groups'])
         text = texts['stats'].format(
             len(stats['users']),
             len(stats['groups']),
@@ -317,7 +315,7 @@ def poketypes_back(client: app, callback_query: CallbackQuery):
 @app.on_message(Filters.command(['data', 'data@inhumanDexBot']))
 def pkmn_search(app, message):
     try:
-        if message.text == '/data' or message.text == '/data@inhumanDexBot':
+        if message.text in ['/data', '/data@inhumanDexBot']:
             app.send_message(message.chat.id, texts['error1'], parse_mode='HTML')
             return None
         pkmn = func.find_name(message.text)
@@ -376,8 +374,7 @@ def pkmn_search(app, message):
 def best_matches(app, message, result):
     text = texts['results']
     emoji_list = ['1️⃣', '2️⃣', '3️⃣']
-    index = 0
-    for dictt in result:
+    for index, dictt in enumerate(result):
         pkmn = dictt['pkmn']
         form = dictt['form']
         percentage = dictt['percentage']
@@ -390,7 +387,6 @@ def best_matches(app, message, result):
         )
         if index == 0:
             text += ' [<b>⭐️ Top result</b>]'
-        index += 1
     app.send_message(message.chat.id, text, parse_mode='HTML')
 
 

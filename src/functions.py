@@ -64,18 +64,14 @@ def best_matches(pkmn, data):
     score_dict = {}
     for key in data:
         for form in data[key]:
-            if key not in form:
-                name = key + ' ' + form
-            else:
-                name = form
-            score1 = 0
             score2 = 0
 
-            # SCORE 1
-            # Typing errors
-            for letter, letter2 in zip(name, pkmn):
-                if letter == letter2:
-                    score1 += 100/len(name)
+            name = key + ' ' + form if key not in form else form
+            score1 = sum(
+                100 / len(name)
+                for letter, letter2 in zip(name, pkmn)
+                if letter == letter2
+            )
 
             # SCORE 2
             # Additional characters
@@ -83,18 +79,11 @@ def best_matches(pkmn, data):
             data_index = 0
             while input_index < len(pkmn) and data_index < len(name):
                 if pkmn[input_index] == name[data_index]:
-                    if len(pkmn) > len(name):
-                        score2 += 100/len(pkmn)
-                    else:
-                        score2 += 100/len(name)
+                    score2 += 100/len(pkmn) if len(pkmn) > len(name) else 100/len(name)
                     data_index += 1
                 input_index += 1
-             
-            if score1 > score2:
-                score_dict[key+'/'+form] = score1
-            else:
-                score_dict[key+'/'+form] = score2
 
+            score_dict[key+'/'+form] = max(score1, score2)
     for key, value in list(score_dict.items()):
         if value < 5:
             del score_dict[key]
@@ -130,11 +119,7 @@ def form_name(pkmn, form):
         pkmn = 'Nidoran♀'
     elif pkmn == 'Nidoran M':
         pkmn = 'Nidoran♂'
-    if pkmn in form:
-        result = form
-    else:
-        result = pkmn + ' (' + form + ')'
-    return result
+    return form if pkmn in form else pkmn + ' (' + form + ')'
 
 
 def set_rating(base):
@@ -157,21 +142,17 @@ def set_rating(base):
 
 
 def get_base_data(pkmn, pkmn_name):
-    ability = ''
-    for i, j in pkmn['abilities'].items():
-        if i == 'hidden_ability':
-            ability += '\n' + '<b>Hidden Ability</b>: ' + j
-        else:
-            ability += ' / ' + j
-    ability = ability[3:]
-    if '/' in ability:
-        ab_str = 'Abilities'
-    else:
-        ab_str = 'Ability'
+    ability = ''.join(
+        '\n' + '<b>Hidden Ability</b>: ' + j
+        if i == 'hidden_ability'
+        else ' / ' + j
+        for i, j in pkmn['abilities'].items()
+    )
 
+    ability = ability[3:]
+    ab_str = 'Abilities' if '/' in ability else 'Ability'
     evo_text = ''
-    family = pkmn['evolutions']
-    if family:
+    if family := pkmn['evolutions']:
         if None not in family['from'].values():
             evo_text += 'It evolves from <b>{}</b> (<i>{}</i>)\n'.format(
                 family['from']['name'],
@@ -219,19 +200,10 @@ def get_base_data(pkmn, pkmn_name):
         )
     legend = texts['minmax']
 
-    typee = ''
-    for i in pkmn['type'].values():
-        typee += ' / ' + i
+    typee = ''.join(' / ' + i for i in pkmn['type'].values())
     typee = typee[3:]
-    if '/' in typee:
-        typee_str = 'Type'
-    else:
-        typee_str = 'Types'
-
-    if pkmn_name:
-        pkmn_name = pkmn_name[0]
-    else:
-        pkmn_name = pkmn['name']
+    typee_str = 'Type' if '/' in typee else 'Types'
+    pkmn_name = pkmn_name[0] if pkmn_name else pkmn['name']
     emoji_dict = texts['emoji_dict']
     first_type = re.split(' / ', typee)[0]
     emoji = emoji_dict[first_type]
@@ -273,24 +245,25 @@ def get_advanced_data(pkmn):
                 gender += i + ': ' + j + '\n'
         gender = gender[:-1]
 
-    ev_yield = ''
-    for i in pkmn['ev_yield']:
-        ev_yield += ' / ' + pkmn['ev_yield'][i] + ' ' + i.title()
+    ev_yield = ''.join(
+        ' / ' + pkmn['ev_yield'][i] + ' ' + i.title() for i in pkmn['ev_yield']
+    )
+
     ev_yield = ev_yield[3:]
 
-    egg_groups = ''
-    for i in pkmn['egg_groups']:
-        egg_groups += ' / ' + i
+    egg_groups = ''.join(' / ' + i for i in pkmn['egg_groups'])
     egg_groups = egg_groups[3:]
 
-    other_lang = ''
-    for i, j in pkmn['other_lang'].items():
-        other_lang += '\n' + i.title() + ': ' + j
+    other_lang = ''.join(
+        '\n' + i.title() + ': ' + j for i, j in pkmn['other_lang'].items()
+    )
+
     other_lang = other_lang[1:]
 
-    name_origin = ''
-    for i, j in pkmn['name_origin'].items():
-        name_origin += ', ' + i + ' (' + j + ')'
+    name_origin = ''.join(
+        ', ' + i + ' (' + j + ')' for i, j in pkmn['name_origin'].items()
+    )
+
     name_origin = name_origin[2:]
 
     tmp = pkmn['height']
@@ -334,16 +307,14 @@ def set_moveset(pkmn, form, page):
     text = texts['legend'] + '\n\n'
     base_text = texts['moveset']
 
-    move_list = [move for move in data[pkmn][form]['moveset']]
+    move_list = list(data[pkmn][form]['moveset'])
     info_list = list(data[pkmn][form]['moveset'].values())
 
     for move, info in zip(move_list, info_list):
         index += 1
         if index >= minn and index <= maxx:
             if type(info['method']) == list:
-                method = ''
-                for i in info['method']:
-                    method += ' / ' + i
+                method = ''.join(' / ' + i for i in info['method'])
                 method = method[3:]
             else:
                 method = info['method']
@@ -356,8 +327,7 @@ def set_moveset(pkmn, form, page):
                 method
             )
 
-    pages = int(index // 10)
-    pages += 1 if pages % 10 != 0 else 0
+    pages = int(index // 10) + (1 if pages % 10 != 0 else 0)
     markup = set_page_buttons(page, pages, pkmn, form)
     return {'text': text, 'markup': markup}
 
@@ -385,7 +355,6 @@ def find_game_name(game):
 
 
 def get_locations(data, pkmn):
-    text = ''
     form = list(data[pkmn].keys())[0]
     loc_dict = data[pkmn][form]['location']
     games = []
@@ -403,10 +372,10 @@ def get_locations(data, pkmn):
                 games.append(game)
                 locations.append(location)
 
-    for game, location in zip(games, locations):
-        text += '<b>' + game + '</b>: <i>' + location + '</i>\n'
-
-    return text
+    return ''.join(
+        '<b>' + game + '</b>: <i>' + location + '</i>\n'
+        for game, location in zip(games, locations)
+    )
 
 
 def get_usage_vgc(page, *args):
@@ -484,8 +453,6 @@ def set_page_buttons(page, pages, *args):
             'usage/'+str(pages)
         ]
 
-    # Initialize buttons
-    markup_list = []
     begin = InlineKeyboardButton(
         text='<<1',
         callback_data=callback_data_list[0]
@@ -507,10 +474,8 @@ def set_page_buttons(page, pages, *args):
         callback_data=callback_data_list[4]
     )
 
-    # Create a page index that display, when possible,
-    # First page, previous page, current page, next page, last page
-    markup_list.append([])
-    if 1 < page-1:
+    markup_list = [[]]
+    if page > 2:
         markup_list[-1].append(begin)
     if page != 1:
         markup_list[-1].append(pre)

@@ -33,14 +33,9 @@ def add_fc(app, message, texts):
         app.send_message(cid, text, parse_mode='HTML')
         return True
 
-    fc = re.search('(SW(-|\s)*)*([0-9]{4}(-|\s)*){2}[0-9]{4}', message.text)
-
-    if not fc:
-        text = texts["fc_error"]
-        app.send_message(cid, text, parse_mode='HTML')
-        return None
-
-    else:
+    if fc := re.search(
+        '(SW(-|\s)*)*([0-9]{4}(-|\s)*){2}[0-9]{4}', message.text
+    ):
         fc = re.sub('(SW)|\s|-', '', fc[0])
         blocks = re.findall('[0-9]{4}', fc)
         fc = '-'.join(blocks)
@@ -53,6 +48,11 @@ def add_fc(app, message, texts):
         with open('src/friendcodes.json', 'w') as filee:
             json.dump(data, filee, indent=4)
 
+    else:
+        text = texts["fc_error"]
+        app.send_message(cid, text, parse_mode='HTML')
+        return None
+
 
 def show_my_fc(app, message, texts):
     data = json.load(open('src/friendcodes.json', 'r'))
@@ -60,11 +60,7 @@ def show_my_fc(app, message, texts):
     cid = str(message.chat.id)
     uid = str(message.from_user.id)
 
-    if uid in data:
-        text = data[uid]['fc']
-    else:
-        text = texts['no_fc']
-
+    text = data[uid]['fc'] if uid in data else texts['no_fc']
     app.send_message(cid, text, parse_mode='HTML')
 
 
@@ -86,10 +82,7 @@ def new_raid(app, message, texts):
         return True
 
     raid.pokemon = re.sub('\/newraid(@inhumanDexBot)*\s', '', message.text)
-    if uid in data:
-        raid.fc = data[uid]['fc']
-    else:
-        raid.fc = '-'
+    raid.fc = data[uid]['fc'] if uid in data else '-'
     raid.idd = uid
     raid.owner = user
     raid.players = []
@@ -97,10 +90,11 @@ def new_raid(app, message, texts):
         raid.pokemon,
         raid.owner,
         raid.fc,
-        raid.players[0] if len(raid.players) > 0 else '-',
+        raid.players[0] if raid.players else '-',
         raid.players[1] if len(raid.players) > 1 else '-',
         raid.players[2] if len(raid.players) > 2 else '-',
     )
+
 
     markup_list = [[]]
     for i in range(1, 6):
@@ -177,7 +171,7 @@ def join(app, call, texts):
     user = call.from_user.first_name
     owner_uid = re.findall('[0-9]+', call.data)[0]
     raid = user_dict[owner_uid]
-        
+
     if uid == raid.idd:
         return None
 
@@ -203,7 +197,7 @@ def join(app, call, texts):
     )
 
     markup_list = []
-    if raid.stars == None:
+    if raid.stars is None:
         markup_list.append([])
         for i in range(1, 6):
             markup_list[-1].append(
@@ -274,7 +268,7 @@ def confirm(app, call, texts):
     if uid != raid.idd:
         app.answer_callback_query(call.id, texts['not_creator'], True)
         return None
-        
+
     text = texts['new_raid'].format(
         raid.pokemon + ' ' + raid.stars if raid.stars else raid.pokemon,
         raid.owner,
@@ -286,9 +280,7 @@ def confirm(app, call, texts):
 
     text += texts['raid_closed']
 
-    pin = ''
-    for i in range(4):
-        pin += random.choice('0123456789')
+    pin = ''.join(random.choice('0123456789') for _ in range(4))
     raid.pin = pin
 
     markup = InlineKeyboardMarkup([[
@@ -314,7 +306,7 @@ def back(app, call, texts):
     mid = call.message.message_id
     owner_uid = re.findall('[0-9]+', call.data)[0]
     raid = user_dict[owner_uid]
-        
+
     if uid != raid.idd:
         app.answer_callback_query(call.id, texts['not_creator'], True)
         return None
@@ -329,7 +321,7 @@ def back(app, call, texts):
     )
 
     markup_list = []
-    if raid.stars == None:
+    if raid.stars is None:
         markup_list.append([])
         for i in range(1, 6):
             markup_list[-1].append(
